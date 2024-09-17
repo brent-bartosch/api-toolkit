@@ -1,0 +1,47 @@
+# API Toolkit Service Specification
+# Ensures all services follow our proven patterns
+
+service_requirements:
+  required_methods:
+    - name: discover
+      signature: "discover(resource: Optional[str] = None) -> Dict[str, Any]"
+      description: "Must always return useful info, even on failure"
+    
+    - name: quick_start
+      signature: "quick_start() -> None"
+      description: "Shows everything in 5 seconds"
+    
+    - name: test_connection
+      signature: "test_connection() -> bool"
+      description: "Verify API credentials work"
+
+  optional_methods:
+    - name: raw_query
+      signature: "raw_query(query: str, params: Optional[Dict] = None)"
+      description: "For services that support raw queries"
+
+  required_patterns:
+    - error_enhancement: "Errors must show available options"
+    - list_response: "Methods return lists directly, not {'data': [...]}"
+    - discovery_first: "All examples must start with discover()"
+
+  documentation:
+    required_files:
+      - README.md
+      - examples.py
+    
+    optional_files:
+      - FILTER_SYNTAX.md  # For database-like services
+      - query_helpers.py  # For services with complex queries
+
+  token_budget:
+    max_loaded: 700  # Maximum tokens when service is loaded
+    target: 500      # Target token count
+
+validation_checklist:
+  - "✓ discover() works even when API fails"
+  - "✓ quick_start() shows concrete examples"
+  - "✓ Errors show what IS available"
+  - "✓ Response format clearly documented"
+  - "✓ Common patterns included"
+  - "✓ Token count under budget"
