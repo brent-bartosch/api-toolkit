@@ -138,8 +138,11 @@ def _normalize_sql(sql: str) -> str:
     - Strip leading/trailing whitespace
     - Collapse multiple whitespace into single spaces
     - Convert to uppercase for case-insensitive matching
-    - Remove SQL comments (single-line --)
+    - Remove SQL comments (single-line -- and block /* */)
     """
+    # Remove block comments (/* ... */)
+    sql = re.sub(r"/\*.*?\*/", "", sql, flags=re.DOTALL)
+
     # Remove single-line comments
     sql = re.sub(r"--[^\n]*", "", sql)
 
@@ -150,24 +153,16 @@ def _normalize_sql(sql: str) -> str:
     return sql.strip().upper()
 
 
-def classify_sql(sql: str) -> SafetyTier:
+def _classify_single_statement(normalized: str) -> SafetyTier:
     """
-    Classify a SQL statement into a safety tier.
+    Classify a single normalized SQL statement into a safety tier.
 
     Args:
-        sql: The SQL statement to classify
+        normalized: A single normalized SQL statement (already uppercased, no comments)
 
     Returns:
         SafetyTier.SAFE, SafetyTier.CAUTIOUS, or SafetyTier.DESTRUCTIVE
-
-    Priority order:
-        1. DESTRUCTIVE patterns checked first (most dangerous)
-        2. CAUTIOUS patterns checked second
-        3. SAFE patterns checked third
-        4. Unknown SQL defaults to CAUTIOUS
     """
-    normalized = _normalize_sql(sql)
-
     # Check DESTRUCTIVE patterns first (most dangerous)
     for pattern in DESTRUCTIVE_PATTERNS:
         if re.match(pattern, normalized, re.IGNORECASE):
@@ -185,6 +180,88 @@ def classify_sql(sql: str) -> SafetyTier:
 
     # Default to CAUTIOUS for unknown SQL (fail-safe)
     return SafetyTier.CAUTIOUS
+
+
+def _split_statements(sql: str) -> list:
+    """
+    Split SQL into individual statements, respecting $$ delimiters.
+
+    PostgreSQL uses $$ or $tag$ delimiters for function bodies which may
+    contain semicolons. We need to avoid splitting inside these blocks.
+
+    Args:
+        sql: Normalized SQL string
+
+    Returns:
+        List of individual SQL statements
+    """
+    # First, temporarily replace content inside $$ or $tag$ blocks
+    # to prevent splitting on semicolons within function bodies
+    dollar_quote_pattern = re.compile(r"\$[a-zA-Z_]*\$.*?\$[a-zA-Z_]*\$", re.DOTALL)
+
+    # Store placeholders for dollar-quoted content
+    placeholders = []
+
+    def replace_dollar_quote(match):
+        placeholders.append(match.group(0))
+        return f"__DOLLAR_QUOTE_{len(placeholders) - 1}__"
+
+    protected_sql = dollar_quote_pattern.sub(replace_dollar_quote, sql)
+
+    # Now split on semicolons
+    statements = [stmt.strip() for stmt in protected_sql.split(";") if stmt.strip()]
+
+    # Restore dollar-quoted content
+    restored_statements = []
+    for stmt in statements:
+        for i, placeholder in enumerate(placeholders):
+            stmt = stmt.replace(f"__DOLLAR_QUOTE_{i}__", placeholder)
+        restored_statements.append(stmt)
+
+    return restored_statements
+
+
+def classify_sql(sql: str) -> SafetyTier:
+    """
+    Classify a SQL statement into a safety tier.
+
+    Args:
+        sql: The SQL statement to classify (may contain multiple statements)
+
+    Returns:
+        SafetyTier.SAFE, SafetyTier.CAUTIOUS, or SafetyTier.DESTRUCTIVE
+
+    For multi-statement SQL (separated by semicolons), returns the MOST
+    DANGEROUS tier found across all statements.
+
+    Priority order:
+        1. DESTRUCTIVE patterns checked first (most dangerous)
+        2. CAUTIOUS patterns checked second
+        3. SAFE patterns checked third
+        4. Unknown SQL defaults to CAUTIOUS
+    """
+    normalized = _normalize_sql(sql)
+
+    # Split on semicolons to handle multi-statement SQL
+    # (respecting $$ blocks for PostgreSQL functions)
+    statements = _split_statements(normalized)
+
+    # If no statements found, default to CAUTIOUS
+    if not statements:
+        return SafetyTier.CAUTIOUS
+
+    # Classify each statement and return the most dangerous tier
+    # Priority: DESTRUCTIVE > CAUTIOUS > SAFE
+    most_dangerous = SafetyTier.SAFE
+
+    for stmt in statements:
+        tier = _classify_single_statement(stmt)
+        if tier == SafetyTier.DESTRUCTIVE:
+            return SafetyTier.DESTRUCTIVE  # Can't get worse, return immediately
+        elif tier == SafetyTier.CAUTIOUS and most_dangerous == SafetyTier.SAFE:
+            most_dangerous = SafetyTier.CAUTIOUS
+
+    return most_dangerous
 
 
 def check_safety(

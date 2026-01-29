@@ -192,6 +192,62 @@ class TestSafetyClassification(unittest.TestCase):
         sql = "VACUUM ANALYZE users"
         self.assertEqual(classify_sql(sql), SafetyTier.CAUTIOUS)
 
+    # ============= MULTI-STATEMENT SQL TESTS =============
+
+    def test_multi_statement_detects_destructive(self):
+        """Multi-statement SQL with DROP should be DESTRUCTIVE"""
+        sql = "SELECT * FROM users; DROP TABLE users"
+        self.assertEqual(classify_sql(sql), SafetyTier.DESTRUCTIVE)
+
+    def test_multi_statement_detects_destructive_first(self):
+        """Multi-statement SQL with DROP first should be DESTRUCTIVE"""
+        sql = "DROP TABLE users; SELECT * FROM users"
+        self.assertEqual(classify_sql(sql), SafetyTier.DESTRUCTIVE)
+
+    def test_multi_statement_detects_destructive_middle(self):
+        """Multi-statement SQL with DROP in middle should be DESTRUCTIVE"""
+        sql = "SELECT * FROM users; DROP TABLE users; SELECT 1"
+        self.assertEqual(classify_sql(sql), SafetyTier.DESTRUCTIVE)
+
+    def test_multi_statement_safe_only(self):
+        """Multi-statement SQL with only SAFE statements should be SAFE"""
+        sql = "SELECT * FROM users; SELECT * FROM orders"
+        self.assertEqual(classify_sql(sql), SafetyTier.SAFE)
+
+    def test_multi_statement_cautious_highest(self):
+        """Multi-statement SQL with CAUTIOUS as highest tier"""
+        sql = "SELECT * FROM users; TRUNCATE TABLE temp"
+        self.assertEqual(classify_sql(sql), SafetyTier.CAUTIOUS)
+
+    # ============= BLOCK COMMENT BYPASS TESTS =============
+
+    def test_block_comment_before_drop(self):
+        """Block comment before DROP should still be DESTRUCTIVE"""
+        sql = "/* comment */ DROP TABLE users"
+        self.assertEqual(classify_sql(sql), SafetyTier.DESTRUCTIVE)
+
+    def test_block_comment_multiline(self):
+        """Multiline block comment before DROP should still be DESTRUCTIVE"""
+        sql = """/* this is a
+        multiline comment */
+        DROP TABLE users"""
+        self.assertEqual(classify_sql(sql), SafetyTier.DESTRUCTIVE)
+
+    def test_block_comment_nested_text(self):
+        """Block comment with nested text should be removed"""
+        sql = "/* SELECT * FROM safe */ DROP TABLE users"
+        self.assertEqual(classify_sql(sql), SafetyTier.DESTRUCTIVE)
+
+    def test_block_comment_multiple(self):
+        """Multiple block comments should all be removed"""
+        sql = "/* comment1 */ DROP /* comment2 */ TABLE users"
+        self.assertEqual(classify_sql(sql), SafetyTier.DESTRUCTIVE)
+
+    def test_block_comment_with_safe_sql(self):
+        """Block comment with SAFE SQL should be SAFE"""
+        sql = "/* just a comment */ SELECT * FROM users"
+        self.assertEqual(classify_sql(sql), SafetyTier.SAFE)
+
 
 class TestSafetyError(unittest.TestCase):
     """Test cases for SafetyError exception"""
