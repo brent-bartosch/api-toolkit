@@ -48,3 +48,5 @@ api-toolkit
 build/
 dist/
 *.egg-info/
+# Git worktrees
+.worktrees/
