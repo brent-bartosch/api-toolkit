@@ -260,6 +260,27 @@ See `PROJECT_CONFIG_GUIDE.md` for details.
   - Both formats work during transition (legacy removed late 2026)
   - See: https://github.com/orgs/supabase/discussions/29260
 
+### Direct Postgres Access (NEW)
+
+For DDL operations the REST API can't handle:
+
+```python
+from api_toolkit.services.supabase.postgres import PostgresAPI
+
+db = PostgresAPI('smoothed')
+
+# CREATE is safe - runs immediately
+db.execute("CREATE TABLE campaigns (id uuid PRIMARY KEY)")
+
+# DROP requires explicit override
+db.execute("DROP TABLE old_data", i_know_what_im_doing=True)
+
+# Dry run to preview
+db.execute("ALTER TABLE users ADD COLUMN phone text", dry_run=True)
+```
+
+Requires `SUPABASE_POSTGRES_URL` in .env (get from Supabase Dashboard -> Settings -> Database).
+
 ### Metabase (services/metabase/)
 - Supports both API key and session auth
 - Can run raw SQL and MBQL queries

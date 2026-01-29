@@ -331,6 +331,40 @@ filters = {
 }
 ```
 
+### Direct Postgres Access (DDL Operations)
+
+For schema changes that the REST API can't handle:
+
+```python
+from api_toolkit.services.supabase.postgres import PostgresAPI
+
+db = PostgresAPI('smoothed')
+
+# Safe operations - execute immediately
+db.execute("CREATE TABLE users (id uuid PRIMARY KEY, email text)")
+db.execute("ALTER TABLE users ADD COLUMN phone text")
+
+# Cautious operations - require confirmation
+db.execute("TRUNCATE test_data", confirm=True)
+
+# Destructive operations - blocked by default
+db.execute("DROP TABLE users")  # Raises SafetyError
+db.execute("DROP TABLE users", i_know_what_im_doing=True)  # Works
+
+# Dry-run mode
+db.execute("CREATE TABLE test (id int)", dry_run=True)
+
+# Run migration files
+db.run_migration('migrations/001_init.sql')
+```
+
+**Safety tiers:**
+| Tier | Operations | Behavior |
+|------|------------|----------|
+| SAFE | CREATE, ALTER ADD, SELECT | Execute immediately |
+| CAUTIOUS | TRUNCATE, ALTER DROP COLUMN | Require `confirm=True` |
+| DESTRUCTIVE | DROP TABLE, DELETE without WHERE | Require `i_know_what_im_doing=True` |
+
 ### Metabase Analytics
 ```python
 from api_toolkit.services.metabase.api import MetabaseAPI
