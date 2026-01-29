@@ -19,7 +19,9 @@ class TestPostgresAPIInit:
         """Test initialization with project name looks up env var."""
         with patch.dict(
             "os.environ",
-            {"SUPABASE_POSTGRES_URL": "postgres://user:pass@localhost:5432/db"},
+            {
+                "SMOOTHED_SUPABASE_POSTGRES_URL": "postgres://user:pass@localhost:5432/db"
+            },
         ):
             api = PostgresAPI("smoothed")
             assert api.project == "smoothed"
@@ -39,7 +41,9 @@ class TestPostgresAPIInit:
         """Test project aliases like project1, project2 map correctly."""
         with patch.dict(
             "os.environ",
-            {"SUPABASE_POSTGRES_URL_2": "postgres://user:pass@localhost:5432/db2"},
+            {
+                "BLINGSTING_SUPABASE_POSTGRES_URL": "postgres://user:pass@localhost:5432/db2"
+            },
         ):
             api = PostgresAPI("blingsting")
             assert api.project == "blingsting"
@@ -54,7 +58,9 @@ class TestPostgresAPISafety:
         """Create a mock API with mocked connection."""
         with patch.dict(
             "os.environ",
-            {"SUPABASE_POSTGRES_URL": "postgres://user:pass@localhost:5432/db"},
+            {
+                "SMOOTHED_SUPABASE_POSTGRES_URL": "postgres://user:pass@localhost:5432/db"
+            },
         ):
             api = PostgresAPI("smoothed")
             # Mock the connection
@@ -116,7 +122,9 @@ class TestPostgresAPIDryRun:
         """Create a mock API for dry run tests."""
         with patch.dict(
             "os.environ",
-            {"SUPABASE_POSTGRES_URL": "postgres://user:pass@localhost:5432/db"},
+            {
+                "SMOOTHED_SUPABASE_POSTGRES_URL": "postgres://user:pass@localhost:5432/db"
+            },
         ):
             api = PostgresAPI("smoothed")
             api._conn = MagicMock()
@@ -149,7 +157,9 @@ class TestPostgresAPIQuery:
         """Create a mock API for query tests."""
         with patch.dict(
             "os.environ",
-            {"SUPABASE_POSTGRES_URL": "postgres://user:pass@localhost:5432/db"},
+            {
+                "SMOOTHED_SUPABASE_POSTGRES_URL": "postgres://user:pass@localhost:5432/db"
+            },
         ):
             api = PostgresAPI("smoothed")
             api._conn = MagicMock()
@@ -182,7 +192,9 @@ class TestPostgresAPIHelpers:
         """Create a mock API for helper method tests."""
         with patch.dict(
             "os.environ",
-            {"SUPABASE_POSTGRES_URL": "postgres://user:pass@localhost:5432/db"},
+            {
+                "SMOOTHED_SUPABASE_POSTGRES_URL": "postgres://user:pass@localhost:5432/db"
+            },
         ):
             api = PostgresAPI("smoothed")
             api._conn = MagicMock()
@@ -235,7 +247,9 @@ class TestPostgresAPITransaction:
         """Create a mock API for transaction tests."""
         with patch.dict(
             "os.environ",
-            {"SUPABASE_POSTGRES_URL": "postgres://user:pass@localhost:5432/db"},
+            {
+                "SMOOTHED_SUPABASE_POSTGRES_URL": "postgres://user:pass@localhost:5432/db"
+            },
         ):
             api = PostgresAPI("smoothed")
             api._conn = MagicMock()
@@ -273,7 +287,9 @@ class TestPostgresAPIMigrations:
         """Create a mock API for migration tests."""
         with patch.dict(
             "os.environ",
-            {"SUPABASE_POSTGRES_URL": "postgres://user:pass@localhost:5432/db"},
+            {
+                "SMOOTHED_SUPABASE_POSTGRES_URL": "postgres://user:pass@localhost:5432/db"
+            },
         ):
             api = PostgresAPI("smoothed")
             api._conn = MagicMock()
@@ -327,7 +343,9 @@ class TestPostgresAPIContextManager:
         """Test that context manager closes connection on exit."""
         with patch.dict(
             "os.environ",
-            {"SUPABASE_POSTGRES_URL": "postgres://user:pass@localhost:5432/db"},
+            {
+                "SMOOTHED_SUPABASE_POSTGRES_URL": "postgres://user:pass@localhost:5432/db"
+            },
         ):
             with patch("psycopg2.connect") as mock_connect:
                 mock_conn = MagicMock()
@@ -347,7 +365,9 @@ class TestPostgresAPIAuditLog:
         """Create a mock API for audit log tests."""
         with patch.dict(
             "os.environ",
-            {"SUPABASE_POSTGRES_URL": "postgres://user:pass@localhost:5432/db"},
+            {
+                "SMOOTHED_SUPABASE_POSTGRES_URL": "postgres://user:pass@localhost:5432/db"
+            },
         ):
             api = PostgresAPI("smoothed")
             api._conn = MagicMock()

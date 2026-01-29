@@ -64,17 +64,20 @@ def _get_psycopg2():
 # =============================================================================
 
 # Project name to environment variable mapping
-# Maps friendly names to their corresponding env var suffixes
+# Format: PROJECTNAME_SUPABASE_POSTGRES_URL
 POSTGRES_PROJECTS = {
-    # Primary project (no suffix)
-    "smoothed": "",
-    "project1": "",
-    # Second project (_2 suffix)
-    "blingsting": "_2",
-    "project2": "_2",
-    # Third project (_3 suffix)
-    "scraping": "_3",
-    "project3": "_3",
+    # Project 1: Smoothed Lead Gen
+    "smoothed": "SMOOTHED_SUPABASE_POSTGRES_URL",
+    "project1": "SMOOTHED_SUPABASE_POSTGRES_URL",
+    # Project 2: Blingsting CRM
+    "blingsting": "BLINGSTING_SUPABASE_POSTGRES_URL",
+    "project2": "BLINGSTING_SUPABASE_POSTGRES_URL",
+    # Project 3: Web Scraping
+    "scraping": "SCRAPING_SUPABASE_POSTGRES_URL",
+    "project3": "SCRAPING_SUPABASE_POSTGRES_URL",
+    # Project 4: Thordata
+    "thordata": "THORDATA_SUPABASE_POSTGRES_URL",
+    "project4": "THORDATA_SUPABASE_POSTGRES_URL",
 }
 
 # Audit log location
@@ -165,25 +168,34 @@ class PostgresAPI:
         Raises:
             ValueError: If no URL found for project
         """
-        # Get the suffix for this project
-        suffix = POSTGRES_PROJECTS.get(project, "")
+        # Get the env var name for this project
+        env_var = POSTGRES_PROJECTS.get(project)
 
-        # Try different env var patterns
-        env_var_patterns = [
-            f"SUPABASE_POSTGRES_URL{suffix}",
-            f"DATABASE_URL{suffix}",
-            f"POSTGRES_URL{suffix}",
-        ]
-
-        for env_var in env_var_patterns:
+        if env_var:
+            # Known project - use its specific env var
             url = os.environ.get(env_var)
             if url:
                 return url
-
-        raise ValueError(
-            f"No Postgres URL found for project '{project}'. "
-            f"Set one of: {', '.join(env_var_patterns)}"
-        )
+            raise ValueError(
+                f"No Postgres URL found for project '{project}'. "
+                f"Set {env_var} in your .env file."
+            )
+        else:
+            # Unknown project - try generic patterns
+            generic_patterns = [
+                f"{project.upper()}_SUPABASE_POSTGRES_URL",
+                f"{project.upper()}_POSTGRES_URL",
+                "DATABASE_URL",
+            ]
+            for pattern in generic_patterns:
+                url = os.environ.get(pattern)
+                if url:
+                    return url
+            raise ValueError(
+                f"Unknown project '{project}'. "
+                f"Known projects: {', '.join(POSTGRES_PROJECTS.keys())}. "
+                f"Or set {project.upper()}_SUPABASE_POSTGRES_URL in .env."
+            )
 
     def _ensure_audit_dir(self) -> None:
         """Ensure the audit log directory exists."""
