@@ -99,11 +99,13 @@ class _TransactionContext:
         conn = self.api._get_connection()
         self._original_autocommit = conn.autocommit
         conn.autocommit = False
+        self.api._in_transaction = True
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Commit or rollback transaction."""
         conn = self.api._conn
+        self.api._in_transaction = False
         if exc_type is not None:
             conn.rollback()
         else:
@@ -142,6 +144,7 @@ class PostgresAPI:
         """
         self.project = project
         self._conn = None
+        self._in_transaction = False
         self._audit_log_path = AUDIT_LOG_PATH
 
         if url:
@@ -282,7 +285,9 @@ class PostgresAPI:
                     results = cursor.fetchall()
                 else:
                     results = []
-            conn.commit()
+            # Only commit if not inside a transaction context
+            if not self._in_transaction:
+                conn.commit()
         except Exception:
             conn.rollback()
             raise
@@ -342,7 +347,7 @@ class PostgresAPI:
         with conn.cursor() as cursor:
             cursor.execute(sql, (schema, table_name))
             result = cursor.fetchone()
-        return result[0] if result else False
+        return result["exists"] if result else False
 
     def get_schema(
         self, table_name: str, schema: str = "public"

@@ -191,7 +191,7 @@ class TestPostgresAPIHelpers:
     def test_table_exists_true(self, mock_api):
         """Test table_exists returns True when table exists."""
         mock_cursor = MagicMock()
-        mock_cursor.fetchone.return_value = (True,)
+        mock_cursor.fetchone.return_value = {"exists": True}
         mock_api._conn.cursor.return_value.__enter__ = MagicMock(
             return_value=mock_cursor
         )
@@ -202,7 +202,7 @@ class TestPostgresAPIHelpers:
     def test_table_exists_false(self, mock_api):
         """Test table_exists returns False when table doesn't exist."""
         mock_cursor = MagicMock()
-        mock_cursor.fetchone.return_value = (False,)
+        mock_cursor.fetchone.return_value = {"exists": False}
         mock_api._conn.cursor.return_value.__enter__ = MagicMock(
             return_value=mock_cursor
         )
