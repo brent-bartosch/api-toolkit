@@ -16,11 +16,12 @@ from dotenv import load_dotenv
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 # Load environment variables
-env_path = Path(__file__).parent.parent.parent / '.env'
+env_path = Path(__file__).parent.parent.parent / ".env"
 if env_path.exists():
     load_dotenv(env_path)
 
 from core.base_api import BaseAPI
+
 
 class SupabaseAPI(BaseAPI):
     """
@@ -73,39 +74,70 @@ class SupabaseAPI(BaseAPI):
     - 1000 requests/minute
     - Use batch operations when possible
     """
-    
+
     # Project configurations - customize these for your Supabase projects
+    #
+    # API Key Migration (2025+):
+    #   New format: sb_secret_... (SECRET_KEY) and sb_publishable_... (PUBLISHABLE_KEY)
+    #   Legacy format: service_role JWT (SERVICE_ROLE_KEY) and anon JWT (ANON_KEY)
+    #   Both formats work during transition. Legacy keys removed late 2026.
+    #   See: https://supabase.com/docs/guides/api/api-keys
+    #
     PROJECTS = {
-        'project1': {  # Primary project
-            'ref': 'your-project-1-ref',  # From Supabase dashboard URL
-            'url_env': 'SUPABASE_URL',
-            'key_env': 'SUPABASE_SERVICE_ROLE_KEY',
-            'anon_env': 'SUPABASE_ANON_API',
-            'description': 'Project 1 - Primary database'
+        "smoothed": {
+            "ref": "gbvogiyztczpryswgbrn",
+            "url_env": "SMOOTHED_SUPABASE_URL",
+            # New keys (preferred) - checked first
+            "secret_env": "SMOOTHED_SUPABASE_SECRET_KEY",
+            "publishable_env": "SMOOTHED_SUPABASE_PUBLISHABLE_KEY",
+            # Legacy keys (fallback) - checked if new keys not found
+            "key_env": "SUPABASE_SERVICE_ROLE_KEY",
+            "anon_env": "SUPABASE_ANON_KEY",
+            "description": "Smoothed Lead Gen",
         },
-        'project2': {  # Secondary project
-            'ref': 'your-project-2-ref',
-            'url_env': 'SUPABASE_URL_2',
-            'key_env': 'SUPABASE_SERVICE_ROLE_KEY_2',
-            'anon_env': 'SUPABASE_ANON_API_2',
-            'description': 'Project 2 - Secondary database'
+        "blingsting": {
+            "ref": "wfcsdffjwviwromzerhv",
+            "url_env": "BLINGSTING_SUPABASE_URL",
+            "secret_env": "BLINGSTING_SUPABASE_SECRET_KEY",
+            "publishable_env": "BLINGSTING_SUPABASE_PUBLISHABLE_KEY",
+            "key_env": "BLINGSTING_SUPABASE_SERVICE_ROLE_KEY",
+            "anon_env": "BLINGSTING_SUPABASE_ANON_KEY",
+            "description": "Blingsting CRM",
         },
-        'project3': {  # Tertiary project
-            'ref': 'your-project-3-ref',
-            'url_env': 'SUPABASE_URL_3',
-            'key_env': 'SUPABASE_SERVICE_ROLE_KEY_3',
-            'anon_env': 'SUPABASE_ANON_API_3',
-            'description': 'Project 3 - Tertiary database'
+        "scraping": {
+            "ref": "tovzwoxswfevywzutgsp",
+            "url_env": "SCRAPING_SUPABASE_URL",
+            "secret_env": "SCRAPING_SUPABASE_SECRET_KEY",
+            "publishable_env": "SCRAPING_SUPABASE_PUBLISHABLE_KEY",
+            "key_env": "SCRAPING_SUPABASE_SERVICE_ROLE_KEY",
+            "anon_env": "SCRAPING_SUPABASE_ANON_KEY",
+            "description": "Web Scraping",
+        },
+        "thordata": {
+            "ref": "jhjaxdnhfhylnsyuszav",
+            "url_env": "THORDATA_SUPABASE_URL",
+            "secret_env": "THORDATA_SUPABASE_SECRET_KEY",
+            "publishable_env": "THORDATA_SUPABASE_PUBLISHABLE_KEY",
+            "key_env": "THORDATA_SUPABASE_SERVICE_ROLE_KEY",
+            "anon_env": "THORDATA_SUPABASE_ANON_KEY",
+            "description": "Thordata",
         },
         # Aliases for backward compatibility
-        'main': 'project1',
-        'secondary': 'project2',
-        'tertiary': 'project3'
+        "project1": "smoothed",
+        "project2": "blingsting",
+        "project3": "scraping",
+        "project4": "thordata",
+        "main": "smoothed",
     }
-    
-    def __init__(self, project: str = 'project1', url: Optional[str] = None,
-                 key: Optional[str] = None, use_anon_key: bool = False,
-                 max_row_limit: Optional[int] = 1000):
+
+    def __init__(
+        self,
+        project: str = "project1",
+        url: Optional[str] = None,
+        key: Optional[str] = None,
+        use_anon_key: bool = False,
+        max_row_limit: Optional[int] = 1000,
+    ):
         """
         Initialize Supabase client for specified project.
 
@@ -133,54 +165,88 @@ class SupabaseAPI(BaseAPI):
         # Resolve aliases
         if project in self.PROJECTS and isinstance(self.PROJECTS[project], str):
             project = self.PROJECTS[project]
-        
+
         self.project = project
         self.project_config = None
-        
+
         # Get project configuration
         if project in self.PROJECTS and isinstance(self.PROJECTS[project], dict):
             config = self.PROJECTS[project]
             self.project_config = config
-            self.project_ref = config['ref']
-            self.project_description = config.get('description', '')
-            url = url or os.getenv(config['url_env'])
-            
-            # Use anon key if requested, otherwise service role
+            self.project_ref = config["ref"]
+            self.project_description = config.get("description", "")
+            url = url or os.getenv(config["url_env"])
+
+            # Key lookup with new format preferred, legacy as fallback
+            # New format: sb_secret_... (SECRET_KEY) and sb_publishable_... (PUBLISHABLE_KEY)
+            # Legacy format: service_role JWT (SERVICE_ROLE_KEY) and anon JWT (ANON_KEY)
             if use_anon_key:
-                key = key or os.getenv(config.get('anon_env'))
+                # Client-side key: try new publishable first, then legacy anon
+                key = (
+                    key
+                    or os.getenv(config.get("publishable_env"))
+                    or os.getenv(config.get("anon_env"))
+                )
             else:
-                key = key or os.getenv(config['key_env'])
+                # Server-side key: try new secret first, then legacy service_role
+                key = (
+                    key
+                    or os.getenv(config.get("secret_env"))
+                    or os.getenv(config.get("key_env"))
+                )
         else:
-            # Assume project is a direct project ref
+            # Unknown project - try generic patterns
             self.project_ref = project
-            self.project_description = f'Custom project: {project}'
-            url = url or os.getenv('SUPABASE_URL')
-            key = key or os.getenv('SUPABASE_SERVICE_ROLE_KEY')
-        
+            self.project_description = f"Custom project: {project}"
+            # Try project-specific URL first, then generic
+            url = (
+                url
+                or os.getenv(f"{project.upper()}_SUPABASE_URL")
+                or os.getenv("SUPABASE_URL")
+            )
+            # Try new key format first, then legacy
+            if use_anon_key:
+                key = (
+                    key
+                    or os.getenv(f"{project.upper()}_SUPABASE_PUBLISHABLE_KEY")
+                    or os.getenv("SUPABASE_ANON_KEY")
+                )
+            else:
+                key = (
+                    key
+                    or os.getenv(f"{project.upper()}_SUPABASE_SECRET_KEY")
+                    or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+                )
+
         super().__init__(
             api_key=key,
             base_url=url,
-            requests_per_second=15  # Supabase can handle more
+            requests_per_second=15,  # Supabase can handle more
         )
-    
+
     def _setup_auth(self):
         """Setup Supabase authentication headers"""
         if self.api_key:
-            self.session.headers.update({
-                'apikey': self.api_key,
-                'Authorization': f'Bearer {self.api_key}',
-                'Content-Type': 'application/json',
-                'Prefer': 'return=representation'  # Return created/updated data
-            })
-    
+            self.session.headers.update(
+                {
+                    "apikey": self.api_key,
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                    "Prefer": "return=representation",  # Return created/updated data
+                }
+            )
+
     # ============= QUERY OPERATIONS =============
-    
-    def query(self, table: str,
-             select: str = "*",
-             filters: Optional[Dict] = None,
-             order: Optional[str] = None,
-             limit: Optional[int] = None,
-             offset: Optional[int] = None) -> List[Dict]:
+
+    def query(
+        self,
+        table: str,
+        select: str = "*",
+        filters: Optional[Dict] = None,
+        order: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> List[Dict]:
         """
         Query a table with filters and options.
 
@@ -216,50 +282,54 @@ class SupabaseAPI(BaseAPI):
         # Check if limit exceeds max_row_limit and warn
         if self.max_row_limit:
             if limit and limit > self.max_row_limit:
-                print(f"⚠️  WARNING: Requested {limit:,} rows, but max_row_limit is {self.max_row_limit:,}")
+                print(
+                    f"⚠️  WARNING: Requested {limit:,} rows, but max_row_limit is {self.max_row_limit:,}"
+                )
                 print(f"    Results will be capped at {self.max_row_limit:,}.")
-                print(f"    💡 TIP: Use api.fetch_all('{table}') to get all records via auto-pagination")
+                print(
+                    f"    💡 TIP: Use api.fetch_all('{table}') to get all records via auto-pagination"
+                )
                 limit = self.max_row_limit
             elif not limit:
                 # If no limit specified, use max_row_limit as default
                 limit = self.max_row_limit
 
-        params = {'select': select}
+        params = {"select": select}
 
         if filters:
             for column, condition in filters.items():
                 params[column] = condition
 
         if order:
-            params['order'] = order
+            params["order"] = order
 
         if limit:
-            params['limit'] = limit
+            params["limit"] = limit
 
         if offset:
-            params['offset'] = offset
-        
+            params["offset"] = offset
+
         try:
-            return self._make_request('GET', f'rest/v1/{table}', params=params)
+            return self._make_request("GET", f"rest/v1/{table}", params=params)
         except Exception as e:
             # Enhanced error messages
             error_msg = str(e)
-            
-            if 'relation' in error_msg and 'does not exist' in error_msg:
+
+            if "relation" in error_msg and "does not exist" in error_msg:
                 # Table doesn't exist
                 available = self.discover()
-                tables = available.get('table_names', [])
+                tables = available.get("table_names", [])
                 raise ValueError(
                     f"Table '{table}' does not exist.\n"
                     f"Available tables: {', '.join(tables) if tables else 'Run api.discover() to see tables'}\n"
                     f"Hint: Use api.discover() first to see all available tables"
                 )
-            
-            elif 'column' in error_msg and 'does not exist' in error_msg:
+
+            elif "column" in error_msg and "does not exist" in error_msg:
                 # Column doesn't exist
                 try:
                     info = self.discover(table)
-                    cols = info.get('column_names', [])
+                    cols = info.get("column_names", [])
                     raise ValueError(
                         f"Column error in table '{table}'.\n"
                         f"Available columns: {', '.join(cols) if cols else 'Run api.discover(table) to see columns'}\n"
@@ -271,15 +341,15 @@ class SupabaseAPI(BaseAPI):
                         f"Use api.discover('{table}') to see available columns.\n"
                         f"Original error: {error_msg}"
                     )
-            
-            elif 'JWT' in error_msg or 'token' in error_msg.lower():
+
+            elif "JWT" in error_msg or "token" in error_msg.lower():
                 # Authentication error
                 raise ValueError(
                     f"Authentication failed for project '{self.project}'.\n"
                     f"Check your .env file has: {self.PROJECTS[self.project]['key_env']}\n"
                     f"Original error: {error_msg}"
                 )
-            
+
             else:
                 # Unknown error - provide helpful context
                 raise ValueError(
@@ -288,17 +358,22 @@ class SupabaseAPI(BaseAPI):
                     f"Or: api.quick_start() to see everything\n"
                     f"Original error: {error_msg}"
                 )
-    
-    def get_by_id(self, table: str, id_value: Any, id_column: str = 'id') -> Optional[Dict]:
+
+    def get_by_id(
+        self, table: str, id_value: Any, id_column: str = "id"
+    ) -> Optional[Dict]:
         """Get a single record by ID"""
-        results = self.query(table, filters={id_column: f'eq.{id_value}'}, limit=1)
+        results = self.query(table, filters={id_column: f"eq.{id_value}"}, limit=1)
         return results[0] if results else None
 
-    def fetch_all(self, table: str,
-                  select: str = "*",
-                  filters: Optional[Dict] = None,
-                  order: Optional[str] = None,
-                  verbose: bool = True) -> List[Dict]:
+    def fetch_all(
+        self,
+        table: str,
+        select: str = "*",
+        filters: Optional[Dict] = None,
+        order: Optional[str] = None,
+        verbose: bool = True,
+    ) -> List[Dict]:
         """
         Fetch ALL records from a table using automatic pagination.
 
@@ -349,7 +424,7 @@ class SupabaseAPI(BaseAPI):
                 filters=filters,
                 order=order,
                 limit=page_size,
-                offset=offset
+                offset=offset,
             )
 
             # Check if we got data
@@ -400,31 +475,31 @@ class SupabaseAPI(BaseAPI):
             where_parts = []
             for column, condition in filters.items():
                 # Parse condition like 'eq.CA' or 'gte.18'
-                if '.' in condition:
-                    op, value = condition.split('.', 1)
+                if "." in condition:
+                    op, value = condition.split(".", 1)
                     op_map = {
-                        'eq': '=',
-                        'neq': '!=',
-                        'gt': '>',
-                        'gte': '>=',
-                        'lt': '<',
-                        'lte': '<=',
-                        'like': 'LIKE',
-                        'ilike': 'ILIKE'
+                        "eq": "=",
+                        "neq": "!=",
+                        "gt": ">",
+                        "gte": ">=",
+                        "lt": "<",
+                        "lte": "<=",
+                        "like": "LIKE",
+                        "ilike": "ILIKE",
                     }
-                    sql_op = op_map.get(op, '=')
+                    sql_op = op_map.get(op, "=")
                     # Quote string values
                     if not value.isdigit():
                         value = f"'{value}'"
                     where_parts.append(f"{column} {sql_op} {value}")
 
-            where_clause = ' AND '.join(where_parts)
+            where_clause = " AND ".join(where_parts)
             sql = f"SELECT COUNT(*) as count FROM {table} WHERE {where_clause}"
         else:
             sql = f"SELECT COUNT(*) as count FROM {table}"
 
         result = self.raw_query(sql)
-        return result[0]['count'] if result else 0
+        return result[0]["count"] if result else 0
 
     def exists(self, table: str, filters: Dict) -> bool:
         """
@@ -448,22 +523,26 @@ class SupabaseAPI(BaseAPI):
         """
         results = self.query(table, filters=filters, limit=1)
         return len(results) > 0
-    
+
     # ============= MUTATION OPERATIONS =============
-    
-    def insert(self, table: str, data: Union[Dict, List[Dict]], 
-              on_conflict: Optional[str] = None) -> Union[Dict, List[Dict]]:
+
+    def insert(
+        self,
+        table: str,
+        data: Union[Dict, List[Dict]],
+        on_conflict: Optional[str] = None,
+    ) -> Union[Dict, List[Dict]]:
         """
         Insert one or more records.
-        
+
         Args:
             table: Table name
             data: Single dict or list of dicts to insert
             on_conflict: Column(s) for upsert behavior
-        
+
         Returns:
             Inserted record(s)
-        
+
         Examples:
             api.insert('users', {'name': 'John', 'email': 'john@example.com'})
             api.insert('users', [{'name': 'John'}, {'name': 'Jane'}])
@@ -471,51 +550,51 @@ class SupabaseAPI(BaseAPI):
         """
         headers = {}
         if on_conflict:
-            headers['Prefer'] = f'resolution=merge-duplicates,return=representation'
-            params = {'on_conflict': on_conflict}
+            headers["Prefer"] = f"resolution=merge-duplicates,return=representation"
+            params = {"on_conflict": on_conflict}
         else:
             params = {}
-        
-        return self._make_request('POST', f'rest/v1/{table}', 
-                                 data=data, params=params, headers=headers)
-    
+
+        return self._make_request(
+            "POST", f"rest/v1/{table}", data=data, params=params, headers=headers
+        )
+
     def update(self, table: str, data: Dict, filters: Dict) -> List[Dict]:
         """
         Update records matching filters.
-        
+
         Args:
             table: Table name
             data: Fields to update
             filters: Which records to update
-        
+
         Returns:
             Updated records
-        
+
         Example:
             api.update('users', {'status': 'active'}, {'age': 'gte.18'})
         """
         params = filters.copy()
-        return self._make_request('PATCH', f'rest/v1/{table}', 
-                                 data=data, params=params)
-    
+        return self._make_request("PATCH", f"rest/v1/{table}", data=data, params=params)
+
     def delete(self, table: str, filters: Dict) -> List[Dict]:
         """
         Delete records matching filters.
-        
+
         Args:
             table: Table name
             filters: Which records to delete
-        
+
         Returns:
             Deleted records
-        
+
         Example:
             api.delete('logs', {'created_at': 'lt.2024-01-01'})
         """
-        return self._make_request('DELETE', f'rest/v1/{table}', params=filters)
-    
+        return self._make_request("DELETE", f"rest/v1/{table}", params=filters)
+
     # ============= RPC OPERATIONS =============
-    
+
     def rpc(self, function_name: str, params: Optional[Dict] = None) -> Any:
         """
         Call a PostgreSQL function.
@@ -530,11 +609,13 @@ class SupabaseAPI(BaseAPI):
         Example:
             api.rpc('calculate_revenue', {'month': '2024-01'})
         """
-        return self._make_request('POST', f'rest/v1/rpc/{function_name}',
-                                 data=params or {})
+        return self._make_request(
+            "POST", f"rest/v1/rpc/{function_name}", data=params or {}
+        )
 
-    def invoke_function(self, function_name: str, body: Optional[Dict] = None,
-                       method: str = "POST") -> Any:
+    def invoke_function(
+        self, function_name: str, body: Optional[Dict] = None, method: str = "POST"
+    ) -> Any:
         """
         Invoke a Supabase Edge Function (Deno serverless function).
 
@@ -563,16 +644,14 @@ class SupabaseAPI(BaseAPI):
         url = f"{self.base_url}/functions/v1/{function_name}"
 
         headers = {
-            'Authorization': f'Bearer {self.api_key}',
-            'Content-Type': 'application/json'
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
         }
 
         import requests
+
         response = requests.request(
-            method=method,
-            url=url,
-            json=body if body else None,
-            headers=headers
+            method=method, url=url, json=body if body else None, headers=headers
         )
 
         response.raise_for_status()
@@ -581,33 +660,33 @@ class SupabaseAPI(BaseAPI):
             return response.json()
         except:
             return response.text
-    
+
     def raw_query(self, sql: str, params: Optional[Dict] = None) -> List[Dict]:
         """
         Execute raw SQL query (READ-ONLY for safety).
-        
+
         ⚠️ SAFETY FEATURES:
         - Only SELECT statements allowed
         - Parameterized queries to prevent SQL injection
         - Automatic LIMIT if not specified
-        
+
         Args:
             sql: SQL query string (SELECT only)
             params: Optional parameters for parameterized query
-        
+
         Returns:
             Query results as list of dicts
-        
+
         Examples:
             # Simple query
             results = api.raw_query("SELECT * FROM users WHERE age > 18 LIMIT 10")
-            
+
             # Parameterized query (recommended)
             results = api.raw_query(
                 "SELECT * FROM users WHERE age > %(min_age)s AND status = %(status)s",
                 {'min_age': 18, 'status': 'active'}
             )
-            
+
             # Complex join
             results = api.raw_query('''
                 SELECT u.name, COUNT(o.id) as order_count
@@ -620,186 +699,211 @@ class SupabaseAPI(BaseAPI):
         """
         # Safety check - only allow SELECT statements
         sql_trimmed = sql.strip().upper()
-        if not sql_trimmed.startswith('SELECT'):
-            raise ValueError("Only SELECT statements are allowed in raw_query() for safety")
-        
+        if not sql_trimmed.startswith("SELECT"):
+            raise ValueError(
+                "Only SELECT statements are allowed in raw_query() for safety"
+            )
+
         # Add LIMIT if not present (safety against large result sets)
-        if 'LIMIT' not in sql_trimmed:
-            sql = sql.rstrip(';') + ' LIMIT 1000'
-        
+        if "LIMIT" not in sql_trimmed:
+            sql = sql.rstrip(";") + " LIMIT 1000"
+
         # Try to execute via RPC if available
         try:
             # Some Supabase projects have a query function
-            result = self.rpc('exec_sql', {
-                'query': sql,
-                'params': params or {}
-            })
+            result = self.rpc("exec_sql", {"query": sql, "params": params or {}})
             return result if isinstance(result, list) else []
         except:
             # Fallback: Parse SQL and convert to REST API call (basic support)
             # This is limited but works for simple queries
             import re
-            
+
             # Extract table name (very basic parser)
-            match = re.search(r'FROM\s+(\w+)', sql, re.IGNORECASE)
+            match = re.search(r"FROM\s+(\w+)", sql, re.IGNORECASE)
             if match:
                 table = match.group(1)
-                
+
                 # Extract WHERE conditions (basic)
-                where_match = re.search(r'WHERE\s+(.+?)(?:ORDER|GROUP|LIMIT|$)', sql, re.IGNORECASE)
+                where_match = re.search(
+                    r"WHERE\s+(.+?)(?:ORDER|GROUP|LIMIT|$)", sql, re.IGNORECASE
+                )
                 filters = {}
-                
+
                 if where_match:
                     # Very basic WHERE parsing - handles simple conditions
                     conditions = where_match.group(1)
                     # Parse simple equality conditions
                     eq_pattern = r'(\w+)\s*=\s*[\'"]([^\'\"]+)[\'"]'
                     for col, val in re.findall(eq_pattern, conditions):
-                        filters[col] = f'eq.{val}'
-                
+                        filters[col] = f"eq.{val}"
+
                 # Extract LIMIT
                 limit = 1000
-                limit_match = re.search(r'LIMIT\s+(\d+)', sql, re.IGNORECASE)
+                limit_match = re.search(r"LIMIT\s+(\d+)", sql, re.IGNORECASE)
                 if limit_match:
                     limit = int(limit_match.group(1))
-                
+
                 # Execute via REST API
                 return self.query(table, filters=filters, limit=limit)
-            
-            raise ValueError(f"Could not execute raw SQL. Use simple queries or ensure RPC 'exec_sql' is available.")
-    
+
+            raise ValueError(
+                f"Could not execute raw SQL. Use simple queries or ensure RPC 'exec_sql' is available."
+            )
+
     # ============= UTILITY METHODS =============
-    
+
     def discover(self, table: Optional[str] = None) -> Dict[str, Any]:
         """
         🔍 DISCOVER DATABASE STRUCTURE - Always works!
-        
+
         This method ALWAYS returns useful information, even if queries fail.
         Use this FIRST before writing any queries!
-        
+
         Args:
             table: Optional specific table to discover. If None, discovers all tables.
-        
+
         Returns:
             Dict with discovery results including tables, columns, samples
-        
+
         Examples:
             # Discover everything
             info = api.discover()
             print(info['tables'])  # List of all tables
-            
+
             # Discover specific table
             info = api.discover('users')
             print(info['columns'])  # List of columns with types
             print(info['sample'])   # Sample data
         """
-        result = {'success': False, 'project': self.project, 'description': self.project_description}
-        
+        result = {
+            "success": False,
+            "project": self.project,
+            "description": self.project_description,
+        }
+
         if table:
             # Discover specific table
-            result['table'] = table
-            
+            result["table"] = table
+
             # Try to get columns from a sample
             try:
                 sample = self.query(table, limit=1)
                 if sample and len(sample) > 0:
                     columns = []
                     for key, value in sample[0].items():
-                        col_type = 'null'
+                        col_type = "null"
                         if value is not None:
                             if isinstance(value, bool):
-                                col_type = 'boolean'
+                                col_type = "boolean"
                             elif isinstance(value, int):
-                                col_type = 'integer'
+                                col_type = "integer"
                             elif isinstance(value, float):
-                                col_type = 'numeric'
+                                col_type = "numeric"
                             elif isinstance(value, str):
-                                col_type = 'text'
+                                col_type = "text"
                             elif isinstance(value, dict):
-                                col_type = 'jsonb'
+                                col_type = "jsonb"
                             elif isinstance(value, list):
-                                col_type = 'array'
+                                col_type = "array"
                             else:
                                 col_type = type(value).__name__
-                        
-                        columns.append({
-                            'name': key,
-                            'type': col_type,
-                            'sample': str(value)[:100] if value is not None else None
-                        })
-                    
-                    result['columns'] = columns
-                    result['column_names'] = [c['name'] for c in columns]
-                    result['sample'] = sample
-                    result['row_count'] = self.count(table)
-                    result['success'] = True
-                    result['message'] = f"Successfully discovered {table}"
+
+                        columns.append(
+                            {
+                                "name": key,
+                                "type": col_type,
+                                "sample": str(value)[:100]
+                                if value is not None
+                                else None,
+                            }
+                        )
+
+                    result["columns"] = columns
+                    result["column_names"] = [c["name"] for c in columns]
+                    result["sample"] = sample
+                    result["row_count"] = self.count(table)
+                    result["success"] = True
+                    result["message"] = f"Successfully discovered {table}"
                 else:
                     # Table exists but is empty
-                    result['columns'] = []
-                    result['column_names'] = []
-                    result['sample'] = []
-                    result['row_count'] = 0
-                    result['success'] = True
-                    result['message'] = f"Table {table} exists but is empty"
+                    result["columns"] = []
+                    result["column_names"] = []
+                    result["sample"] = []
+                    result["row_count"] = 0
+                    result["success"] = True
+                    result["message"] = f"Table {table} exists but is empty"
             except Exception as e:
-                result['error'] = str(e)
-                result['message'] = f"Could not query {table}: {e}"
-                result['hint'] = "Check if table name is correct. Use discover() without arguments to see all tables."
+                result["error"] = str(e)
+                result["message"] = f"Could not query {table}: {e}"
+                result[
+                    "hint"
+                ] = "Check if table name is correct. Use discover() without arguments to see all tables."
         else:
             # Discover all tables
             tables = []
-            
+
             # Known tables for each project (fallback if API fails)
             KNOWN_TABLES = {
-                'project1': ['brands', 'leads', 'scraping_results', 'brand_contacts'],
-                'project2': ['customers', 'orders', 'products', 'invoices'],
-                'project3': ['scrape_guide', 'scrape_results', 'scrape_queue']
+                "project1": ["brands", "leads", "scraping_results", "brand_contacts"],
+                "project2": ["customers", "orders", "products", "invoices"],
+                "project3": ["scrape_guide", "scrape_results", "scrape_queue"],
             }
-            
+
             # Try to get tables dynamically first
             discovered = False
             for known_table in KNOWN_TABLES.get(self.project, []):
                 try:
                     # Test if table exists by trying to query it
                     test = self.query(known_table, limit=1)
-                    tables.append({
-                        'name': known_table,
-                        'accessible': True,
-                        'row_count': self.count(known_table)
-                    })
+                    tables.append(
+                        {
+                            "name": known_table,
+                            "accessible": True,
+                            "row_count": self.count(known_table),
+                        }
+                    )
                     discovered = True
                 except:
-                    tables.append({
-                        'name': known_table,
-                        'accessible': False,
-                        'note': 'Table might not exist or no access'
-                    })
-            
+                    tables.append(
+                        {
+                            "name": known_table,
+                            "accessible": False,
+                            "note": "Table might not exist or no access",
+                        }
+                    )
+
             if discovered:
-                result['tables'] = tables
-                result['table_names'] = [t['name'] for t in tables if t.get('accessible', False)]
-                result['success'] = True
-                result['message'] = f"Discovered {len(result['table_names'])} accessible tables"
-                result['hint'] = f"Use discover('table_name') to explore a specific table"
+                result["tables"] = tables
+                result["table_names"] = [
+                    t["name"] for t in tables if t.get("accessible", False)
+                ]
+                result["success"] = True
+                result[
+                    "message"
+                ] = f"Discovered {len(result['table_names'])} accessible tables"
+                result[
+                    "hint"
+                ] = f"Use discover('table_name') to explore a specific table"
             else:
-                result['tables'] = []
-                result['table_names'] = []
-                result['message'] = "Could not discover tables automatically"
-                result['hint'] = f"Known tables for {self.project}: {', '.join(KNOWN_TABLES.get(self.project, []))}"
-        
+                result["tables"] = []
+                result["table_names"] = []
+                result["message"] = "Could not discover tables automatically"
+                result[
+                    "hint"
+                ] = f"Known tables for {self.project}: {', '.join(KNOWN_TABLES.get(self.project, []))}"
+
         return result
-    
+
     def get_tables(self) -> List[str]:
         """
         Get list of all accessible tables.
-        
+
         Returns:
             List of table names
         """
         discovery = self.discover()
-        return discovery.get('table_names', [])
-    
+        return discovery.get("table_names", [])
+
     def get_schema(self, table: str) -> List[Dict[str, Any]]:
         """Get schema information for a table"""
         try:
@@ -808,31 +912,35 @@ class SupabaseAPI(BaseAPI):
             if sample:
                 schema = []
                 for key, value in sample[0].items():
-                    schema.append({
-                        'column': key,
-                        'type': type(value).__name__ if value is not None else 'unknown',
-                        'sample': str(value)[:50] if value is not None else None
-                    })
+                    schema.append(
+                        {
+                            "column": key,
+                            "type": type(value).__name__
+                            if value is not None
+                            else "unknown",
+                            "sample": str(value)[:50] if value is not None else None,
+                        }
+                    )
                 return schema
             return []
         except Exception as e:
             print(f"Could not get schema for {table}: {e}")
             return []
-    
+
     def describe_table(self, table: str) -> Dict[str, Any]:
         """Get detailed information about a table"""
         try:
             # Get basic info
             info = {
-                'name': table,
-                'columns': self.get_schema(table),
-                'row_count': self.count(table),
-                'sample_data': self.query(table, limit=3)
+                "name": table,
+                "columns": self.get_schema(table),
+                "row_count": self.count(table),
+                "sample_data": self.query(table, limit=3),
             }
             return info
         except Exception as e:
-            return {'name': table, 'error': str(e)}
-    
+            return {"name": table, "error": str(e)}
+
     def explore(self, table: Optional[str] = None) -> None:
         """Interactive exploration of database"""
         if table:
@@ -840,12 +948,13 @@ class SupabaseAPI(BaseAPI):
             print(f"\nTable: {info['name']}")
             print(f"Rows: {info.get('row_count', 'unknown')}")
             print("\nColumns:")
-            for col in info.get('columns', []):
+            for col in info.get("columns", []):
                 print(f"  - {col['column']}: {col['type']}")
             print("\nSample data:")
-            if info.get('sample_data'):
+            if info.get("sample_data"):
                 import json
-                print(json.dumps(info['sample_data'][:2], indent=2))
+
+                print(json.dumps(info["sample_data"][:2], indent=2))
         else:
             tables = self.get_tables()
             print(f"\nProject: {self.project} ({self.project_description})")
@@ -855,23 +964,23 @@ class SupabaseAPI(BaseAPI):
                     print(f"  - {table.get('table_name', table)}")
                 else:
                     print(f"  - {table}")
-    
+
     def test_connection(self) -> bool:
         """Test if API connection is working"""
         try:
             # Try to get the API root to test connection
-            self._make_request('GET', 'rest/v1/', params={'limit': 1})
+            self._make_request("GET", "rest/v1/", params={"limit": 1})
             return True
         except:
             return False
-    
+
     def quick_start(self) -> None:
         """
         🚀 QUICK START - Shows everything you need in 5 seconds!
-        
+
         This single method eliminates 80% of the friction.
         Use this FIRST when starting with any project!
-        
+
         Example:
             api = SupabaseAPI('project1')
             api.quick_start()  # Shows everything you need
@@ -879,49 +988,49 @@ class SupabaseAPI(BaseAPI):
         print(f"\n{'='*60}")
         print(f"🚀 QUICK START for {self.project}")
         print(f"{'='*60}\n")
-        
+
         # Test connection
         if not self.test_connection():
             print("❌ Connection failed! Check your .env file")
             print(f"   Expected env vars: {self.PROJECTS[self.project]['key_env']}")
             return
-        
+
         print(f"✅ Connected to: {self.project_description}")
         print(f"   Project ref: {self.project_ref}\n")
-        
+
         # Discover tables
         discovery = self.discover()
-        
-        if discovery['success']:
-            tables = discovery.get('table_names', [])
+
+        if discovery["success"]:
+            tables = discovery.get("table_names", [])
             print(f"📊 Available tables ({len(tables)}):")
             for table in tables[:10]:  # Show first 10
                 print(f"   - {table}")
             if len(tables) > 10:
                 print(f"   ... and {len(tables) - 10} more")
             print()
-            
+
             # Show example table structure
             if tables:
                 example_table = tables[0]
                 print(f"🔍 Example table structure: {example_table}")
-                
+
                 table_info = self.discover(example_table)
-                if table_info.get('success'):
-                    columns = table_info.get('columns', [])
+                if table_info.get("success"):
+                    columns = table_info.get("columns", [])
                     print(f"   Columns ({len(columns)}):")
                     for col in columns[:8]:  # Show first 8 columns
                         print(f"      - {col['name']}: {col['type']}")
                     if len(columns) > 8:
                         print(f"      ... and {len(columns) - 8} more")
-                    
+
                     print(f"   Row count: {table_info.get('row_count', 'unknown')}")
                     print()
         else:
             print("⚠️  Could not auto-discover tables")
             print(f"   Hint: {discovery.get('hint', '')}")
             print()
-        
+
         # Show filter syntax
         print("📝 Filter syntax cheat sheet:")
         print("   filters = {")
@@ -932,7 +1041,7 @@ class SupabaseAPI(BaseAPI):
         print("       'role': 'in.(admin,user)', # role IN ('admin','user')")
         print("   }")
         print()
-        
+
         # Show example queries
         print("💡 Example queries:")
         print(f"   # Get all records from first table")
@@ -947,7 +1056,7 @@ class SupabaseAPI(BaseAPI):
         print(f"   # Raw SQL (for complex queries)")
         print(f"   results = api.raw_query('SELECT * FROM table WHERE id > 100')")
         print()
-        
+
         print("📚 Next steps:")
         print("   1. api.discover()           # See all tables")
         print("   2. api.discover('table')    # Explore specific table")
@@ -961,7 +1070,7 @@ class SupabaseAPI(BaseAPI):
 if __name__ == "__main__":
     import sys
     import json
-    
+
     if len(sys.argv) < 2:
         print("Usage:")
         print("  python api.py test [project]           # Test connection")
@@ -976,10 +1085,10 @@ if __name__ == "__main__":
         print("  scraping   - Web Project 3 (scrape guides)")
         print("\nAliases: main→smoothed, project2→blingsting, project3→scraping")
         sys.exit(1)
-    
+
     command = sys.argv[1]
-    project = sys.argv[2] if len(sys.argv) > 2 else 'project1'
-    
+    project = sys.argv[2] if len(sys.argv) > 2 else "project1"
+
     try:
         if command == "test":
             api = SupabaseAPI(project)
@@ -991,26 +1100,26 @@ if __name__ == "__main__":
                 print(f"  URL: {api.base_url}")
             else:
                 print(f"✗ Connection to Supabase project '{project}' failed")
-        
+
         elif command == "tables":
             api = SupabaseAPI(project)
             tables = api.get_tables()
             print(f"Tables in {project}:")
             for table in tables:
                 print(f"  - {table}")
-        
+
         elif command == "query" and len(sys.argv) > 3:
             table = sys.argv[3]
             api = SupabaseAPI(project)
             results = api.query(table, limit=5)
             print(json.dumps(results, indent=2))
-        
+
         elif command == "count" and len(sys.argv) > 3:
             table = sys.argv[3]
             api = SupabaseAPI(project)
             count = api.count(table)
             print(f"{table} has {count} records")
-        
+
         elif command == "schema" and len(sys.argv) > 3:
             table = sys.argv[3]
             api = SupabaseAPI(project)
@@ -1018,17 +1127,17 @@ if __name__ == "__main__":
             print(f"Schema for {table}:")
             for col in schema:
                 print(f"  {col['column']}: {col['type']}")
-        
+
         elif command == "explore":
             api = SupabaseAPI(project)
             if len(sys.argv) > 3:
                 api.explore(sys.argv[3])
             else:
                 api.explore()
-        
+
         else:
             print(f"Unknown command: {command}")
-    
+
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)

@@ -250,24 +250,48 @@ See `PROJECT_CONFIG_GUIDE.md` for details.
 ## Service-Specific Notes
 
 ### Supabase (services/supabase/)
-- Three configured projects: 'project1' (lead gen), 'project2' (CRM), 'project3' (web scraping)
+
+**Four configured projects:**
+- `smoothed` - Lead Gen (aliases: project1, main)
+- `blingsting` - CRM (alias: project2)
+- `scraping` - Web Scraping (alias: project3)
+- `thordata` - Thordata (alias: project4)
+
+**Key features:**
 - Always use discovery methods before querying
 - `raw_query()` method for complex SQL (auto-limits to 1000 if no LIMIT clause)
 - Filter syntax documented in `FILTER_SYNTAX.md`
-- **API Key Changes (2025+)**: Supabase introduced new key formats:
-  - `sb_secret_...` replaces `service_role` JWT keys
-  - `sb_publishable_...` replaces `anon` JWT keys
-  - Both formats work during transition (legacy removed late 2026)
-  - See: https://github.com/orgs/supabase/discussions/29260
 
-### Direct Postgres Access (NEW)
+**API Key Migration (2025+):**
+
+Supabase introduced new API key formats. The toolkit supports both:
+
+| New Format (preferred) | Legacy Format (until late 2026) | Use Case |
+|------------------------|--------------------------------|----------|
+| `sb_secret_...` → `SECRET_KEY` | `service_role` JWT → `SERVICE_ROLE_KEY` | Server-side |
+| `sb_publishable_...` → `PUBLISHABLE_KEY` | `anon` JWT → `ANON_KEY` | Client-side |
+
+**Environment variable naming:**
+```bash
+# New format (preferred)
+THORDATA_SUPABASE_SECRET_KEY=sb_secret_...
+THORDATA_SUPABASE_URL=https://xxx.supabase.co
+
+# Legacy format (still works)
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+```
+
+The toolkit checks for new keys first, then falls back to legacy.
+See: https://supabase.com/docs/guides/api/api-keys
+
+### Direct Postgres Access (PostgresAPI)
 
 For DDL operations the REST API can't handle:
 
 ```python
 from api_toolkit.services.supabase.postgres import PostgresAPI
 
-db = PostgresAPI('smoothed')
+db = PostgresAPI('thordata')  # or 'smoothed', 'blingsting', 'scraping'
 
 # CREATE is safe - runs immediately
 db.execute("CREATE TABLE campaigns (id uuid PRIMARY KEY)")
@@ -277,9 +301,13 @@ db.execute("DROP TABLE old_data", i_know_what_im_doing=True)
 
 # Dry run to preview
 db.execute("ALTER TABLE users ADD COLUMN phone text", dry_run=True)
+
+# Run migration files
+db.run_migration('migrations/001_init.sql')
 ```
 
-Requires `SUPABASE_POSTGRES_URL` in .env (get from Supabase Dashboard -> Settings -> Database).
+**Environment variable:** `PROJECTNAME_SUPABASE_POSTGRES_URL`
+Get from: Supabase Dashboard → Settings → Database → Connection string
 
 ### Metabase (services/metabase/)
 - Supports both API key and session auth
