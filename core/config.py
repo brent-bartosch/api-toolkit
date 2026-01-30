@@ -74,6 +74,16 @@ class Config:
             "env_vars": ["SHOPIFY_SHOP_DOMAIN", "SHOPIFY_ACCESS_TOKEN"],
             "token_cost": 600,
         },
+        "monitoring": {
+            "env_vars": [
+                "DISCORD_WEBHOOK_URL",
+                "TELEGRAM_BOT_TOKEN",
+                "TELEGRAM_CHAT_ID",
+                "SUPABASE_ACCESS_TOKEN",
+            ],
+            "projects": ["smoothed", "blingsting", "scraping", "thordata"],
+            "token_cost": 800,
+        },
     }
 
     @classmethod
