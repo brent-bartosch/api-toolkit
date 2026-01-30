@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Tests for monitoring SQL queries."""
+import os
+import sys
+
+# Add parent directory to path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import pytest
 from services.monitoring.queries import (
     GET_CRON_JOBS,
