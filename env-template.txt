@@ -1,0 +1,84 @@
+# API Toolkit Environment Variables
+# Copy this file to .env and fill in your actual values
+
+# =============================================================================
+# SUPABASE CONFIGURATION
+# =============================================================================
+# Get your credentials from: https://supabase.com/dashboard/project/_/settings/api
+#
+# API Key Migration (Summer 2026):
+#   - SECRET_KEY (sb_secret_...) replaces SERVICE_ROLE_KEY
+#   - PUBLISHABLE_KEY (sb_publishable_...) replaces ANON_KEY
+#   - Both formats work during transition
+#   - See: https://github.com/orgs/supabase/discussions/29260
+
+# -----------------------------------------------------------------------------
+# Project 1: Smoothed (Lead Gen)
+# -----------------------------------------------------------------------------
+SMOOTHED_SUPABASE_URL=https://gbvogiyztczpryswgbrn.supabase.co
+SMOOTHED_SUPABASE_SECRET_KEY=sb_secret_...
+SMOOTHED_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+SMOOTHED_SUPABASE_DATABASE_PASSWORD=
+SMOOTHED_SUPABASE_POSTGRES_URL=postgresql://postgres:[PASSWORD]@db.gbvogiyztczpryswgbrn.supabase.co:5432/postgres
+
+# -----------------------------------------------------------------------------
+# Project 2: Blingsting (CRM)
+# -----------------------------------------------------------------------------
+BLINGSTING_SUPABASE_URL=https://wfcsdffjwviwromzerhv.supabase.co
+BLINGSTING_SUPABASE_SECRET_KEY=sb_secret_...
+BLINGSTING_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+BLINGSTING_SUPABASE_DATABASE_PASSWORD=
+BLINGSTING_SUPABASE_POSTGRES_URL=postgresql://postgres:[PASSWORD]@db.wfcsdffjwviwromzerhv.supabase.co:5432/postgres
+
+# -----------------------------------------------------------------------------
+# Project 3: Scraping (Web Scraping)
+# -----------------------------------------------------------------------------
+SCRAPING_SUPABASE_URL=https://tovzwoxswfevywzutgsp.supabase.co
+SCRAPING_SUPABASE_SECRET_KEY=sb_secret_...
+SCRAPING_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+SCRAPING_SUPABASE_DATABASE_PASSWORD=
+SCRAPING_SUPABASE_POSTGRES_URL=postgresql://postgres:[PASSWORD]@db.tovzwoxswfevywzutgsp.supabase.co:5432/postgres
+
+# -----------------------------------------------------------------------------
+# Project 4: Thordata (Monitoring Hub)
+# -----------------------------------------------------------------------------
+THORDATA_SUPABASE_URL=https://jhjaxdnhfhylnsyuszav.supabase.co
+THORDATA_SUPABASE_SECRET_KEY=sb_secret_...
+THORDATA_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+THORDATA_SUPABASE_DATABASE_PASSWORD=
+THORDATA_SUPABASE_POSTGRES_URL=postgresql://postgres:[PASSWORD]@db.jhjaxdnhfhylnsyuszav.supabase.co:5432/postgres
+
+# =============================================================================
+# MONITORING SERVICE (Discord + Telegram Alerts)
+# =============================================================================
+# Discord: Create webhook in Server Settings → Integrations → Webhooks
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+
+# Telegram: Create bot via @BotFather, get chat_id from @userinfobot
+TELEGRAM_BOT_TOKEN=123456789:ABC...
+TELEGRAM_CHAT_ID=
+
+# Supabase Management API (for edge function discovery)
+# Get from: https://supabase.com/dashboard/account/tokens
+SUPABASE_ACCESS_TOKEN=sbp_...
+
+# =============================================================================
+# OTHER SERVICES
+# =============================================================================
+
+# Klaviyo - Email Marketing
+KLAVIYO_API_KEY=pk_...
+
+# Render - Cloud Deployments
+RENDER_API_KEY=rnd_...
+
+# BrightData - Web Scraping
+BRIGHTDATA_API_KEY=
+BRIGHTDATA_CUSTOMER_ID=
+
+# Shopify - E-commerce
+SHOPIFY_SHOP_DOMAIN=your-shop.myshopify.com
+SHOPIFY_ACCESS_TOKEN=shpat_...
+
+# Smartlead - Email Campaigns
+SMARTLEAD_API_KEY=
