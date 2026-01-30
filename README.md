@@ -206,6 +206,7 @@ results = query.execute(api)
 | **smartlead** | ~600 | ✅ Ready | Cold email automation | Campaigns, leads, sequences, webhooks |
 | **render** | ~600 | ✅ Ready | Cloud deployments | Services, databases, deploys, env vars |
 | **brightdata** | ~500 | ✅ Ready | Web scraping & proxies | Project 3 Browser, Web Unlocker, SERP API |
+| **monitoring** | ~800 | ✅ Ready | Supabase job monitoring | pg_cron discovery, health checks, Discord/Telegram alerts |
 | klaviyo | ~500 | 🔧 Pending | Email marketing | - |
 | shopify | ~600 | 🔧 Pending | E-commerce | - |
 
@@ -699,18 +700,36 @@ print(f"Loaded env from: {Config.get_env_source()}")
 Configure these in your project's `.env` file:
 
 ### Supabase Projects
-```bash
-# Project 1: Project1 (Lead Generation)
-SUPABASE_URL=https://your-project-1.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-key-here
 
-# Project 2: Project2 (CRM)
+> **API Key Migration (Summer 2026):** Supabase is sunsetting `service_role` JWT keys and replacing them with `sb_secret_...` format keys. Both formats work during the transition period. See [Supabase API Keys Discussion](https://github.com/orgs/supabase/discussions/29260).
+
+| Old Format (deprecated) | New Format (preferred) | Use Case |
+|------------------------|------------------------|----------|
+| `eyJ...` (JWT) | `sb_secret_...` | Server-side / Service Role |
+| `eyJ...` (JWT) | `sb_publishable_...` | Client-side / Anon |
+
+```bash
+# Project 1: Smoothed (Lead Generation)
+SUPABASE_URL=https://your-project-1.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-key-here  # sb_secret_... or legacy eyJ...
+
+# Project 2: Blingsting (CRM)
 SUPABASE_URL_2=https://your-project-2.supabase.co
 SUPABASE_SERVICE_ROLE_KEY_2=your-key-here
 
-# Project 3: Project 3 (Web Project 3)
+# Project 3: Scraping (Web Scraping)
 SUPABASE_URL_3=https://your-project-3.supabase.co
 SUPABASE_SERVICE_ROLE_KEY_3=your-key-here
+
+# Project 4: Thordata
+SUPABASE_URL_4=https://your-project-4.supabase.co
+SUPABASE_SERVICE_ROLE_KEY_4=your-key-here
+
+# Direct Postgres URLs (for PostgresAPI / DDL operations)
+SMOOTHED_SUPABASE_POSTGRES_URL=postgresql://...
+BLINGSTING_SUPABASE_POSTGRES_URL=postgresql://...
+SCRAPING_SUPABASE_POSTGRES_URL=postgresql://...
+THORDATA_SUPABASE_POSTGRES_URL=postgresql://...
 ```
 
 ### Context7 (Real-time Documentation)
