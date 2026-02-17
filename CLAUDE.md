@@ -394,9 +394,9 @@ Compare: MCP servers load 90,000 tokens per conversation. This toolkit loads ~50
 → Check if `services/{name}/api.py` exists
 → Verify API class name ends with "API"
 
-## MCP Servers (Three Approaches)
+## MCP Servers (Four Approaches)
 
-The toolkit provides **three MCP server implementations**, each optimized for different scenarios:
+The toolkit provides **four MCP server implementations**, each optimized for different scenarios:
 
 ### 1. Direct Tools MCP (~300 tokens) - Simple Queries
 
@@ -443,6 +443,29 @@ Following **Anthropic's pattern**: Execute Python in sandbox, process data befor
 
 ---
 
+### 3. Playwright Curated MCP (~2,000 tokens) - Frontend Visual + Interactive
+
+**Best for**: Iterating on UI design and functionality. Navigate staging/preview URLs, take screenshots, click elements, fill forms.
+
+```bash
+# Install: pip install -r mcp-server-playwright/requirements.txt && playwright install chromium
+# Configure in .claude/mcp.json (see mcp-server-playwright/INSTALLATION.md)
+```
+
+**8 tools:**
+- `browser_navigate` - Load a URL
+- `browser_screenshot` - Capture page to disk (returns file path for Read tool)
+- `browser_click` - Click element (CSS/text selector)
+- `browser_type` - Type into input field
+- `browser_select` - Select dropdown option
+- `browser_snapshot` - Get accessibility tree as text
+- `browser_evaluate` - Run JavaScript
+- `browser_close` - Close browser session
+
+**See:** `mcp-server-playwright/README.md` | `mcp-server-playwright/INSTALLATION.md`
+
+---
+
 ## Slash Commands (For Documentation)
 | Command | Purpose | Tokens |
 |---------|---------|--------|
@@ -452,12 +475,14 @@ Following **Anthropic's pattern**: Execute Python in sandbox, process data befor
 | `/metabase` | Analytics, BI, SQL queries | ~850 |
 | `/render` | Cloud deployments | ~800 |
 | `/brightdata` | Web scraping, proxies | ~850 |
+| `/playwright` | Browser automation (8 tools) | ~300 |
 
 ## References
 - **MCP server summary**: `MCP_SERVER_SUMMARY.md` ⭐ NEW - What was built and why
 - **MCP server guide**: `mcp-server/README.md` ⭐ NEW - Complete usage guide
 - **MCP installation**: `mcp-server/INSTALLATION.md` ⭐ NEW - Step-by-step setup
 - **MCP design**: `mcp-server/design.md` ⭐ NEW - Architecture & token optimization
+- **Playwright MCP**: `mcp-server-playwright/README.md` - Visual + interactive frontend tools
 - **Slash commands guide**: `SLASH_COMMANDS.md` - Documentation loading
 - **Command definitions**: `.claude/commands/*.md` - Service-specific commands
 - Full documentation: `README.md`

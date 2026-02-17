@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "python",
+      "args": ["/Users/brentbartosch/Development/api-toolkit/mcp-server-playwright/server.py"],
+      "env": {}
+    }
+  }
+}
