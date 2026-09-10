@@ -40,7 +40,7 @@ The `toolkit.py` CLI dynamically discovers and loads services:
 - Scans `services/` directory for subdirectories with `api.py`
 - Lazy loads services only when accessed
 - Caches loaded instances for reuse
-- Supports project-specific configurations (e.g., Supabase has 3 projects: smoothed, blingsting, scraping)
+- Supports project-specific configurations (e.g., Supabase has 4 projects: smoothed, blingsting, scraping, thordata)
 
 ## Development Commands
 
@@ -339,6 +339,9 @@ Get from: Supabase Dashboard → Settings → Database → Connection string
 - Contextual examples for AI coding
 - Up-to-date API references
 
+### Other services on disk
+`dayai`, `google_search_console`, `klaviyo`, `linear`, `notion`, `shopify`, `monitoring` — see each `services/<name>/README.md`.
+
 ## Testing Standards
 
 Services must pass 10 standard tests from `ServiceTestBase`:
@@ -394,94 +397,25 @@ Compare: MCP servers load 90,000 tokens per conversation. This toolkit loads ~50
 → Check if `services/{name}/api.py` exists
 → Verify API class name ends with "API"
 
-## MCP Servers (Four Approaches)
-
-The toolkit provides **four MCP server implementations**, each optimized for different scenarios:
-
-### 1. Direct Tools MCP (~300 tokens) - Simple Queries
-
-**Best for**: Small queries (<100 rows), simple operations
-
-```bash
-# Install: pip install -r mcp-server/requirements.txt
-# Configure in ~/.config/claude/mcp.json (see mcp-server/INSTALLATION.md)
-```
-
-**7 Supabase tools:**
-- `query_supabase` - Query tables with filters
-- `supabase_discover` - List tables or get schema
-- `supabase_raw_query` - Execute raw SQL
-- `supabase_insert` - Insert records
-- `supabase_update` - Update records
-- `supabase_rpc` - Call PostgreSQL functions
-- `supabase_invoke_function` - Call Deno Edge Functions
-
-**See:** `mcp-server/README.md`
-
----
-
-### 2. Code Execution MCP (~2,000 tokens) - **RECOMMENDED for Large Datasets**
-
-**Best for**: Large datasets (>100 rows), complex analysis, multi-step operations
-
-Following **Anthropic's pattern**: Execute Python in sandbox, process data before returning (99% token savings!).
-
-```bash
-# Install: pip install -r mcp-server-code-exec/requirements.txt
-# Configure in ~/.config/claude/mcp.json (see mcp-server-code-exec/INSTALLATION.md)
-```
-
-**6 tools:**
-- `execute_python` - Run Python code in secure sandbox
-- `discover_services` - List available services (progressive disclosure)
-- `get_service_info` - Get service details (3 detail levels)
-- `get_quick_start` - Minimal working example
-- `search_tools` - Find tools by keyword
-- `get_code_examples` - Get specific examples
-
-**See:** `mcp-server-code-exec/README.md` | `CODE_EXECUTION_MCP_SUMMARY.md`
-
----
-
-### 3. Playwright Curated MCP (~2,000 tokens) - Frontend Visual + Interactive
-
-**Best for**: Iterating on UI design and functionality. Navigate staging/preview URLs, take screenshots, click elements, fill forms.
-
-```bash
-# Install: pip install -r mcp-server-playwright/requirements.txt && playwright install chromium
-# Configure in .claude/mcp.json (see mcp-server-playwright/INSTALLATION.md)
-```
-
-**8 tools:**
-- `browser_navigate` - Load a URL
-- `browser_screenshot` - Capture page to disk (returns file path for Read tool)
-- `browser_click` - Click element (CSS/text selector)
-- `browser_type` - Type into input field
-- `browser_select` - Select dropdown option
-- `browser_snapshot` - Get accessibility tree as text
-- `browser_evaluate` - Run JavaScript
-- `browser_close` - Close browser session
-
-**See:** `mcp-server-playwright/README.md` | `mcp-server-playwright/INSTALLATION.md`
-
----
-
 ## Slash Commands (For Documentation)
 | Command | Purpose | Tokens |
 |---------|---------|--------|
 | `/api-toolkit` | Check installation, get overview | ~800 |
-| `/supabase` | Database operations (3 projects) | ~1000 |
+| `/supabase` | Database operations (4 projects) | ~1000 |
 | `/smartlead` | Email campaigns, webhooks | ~900 |
 | `/metabase` | Analytics, BI, SQL queries | ~850 |
 | `/render` | Cloud deployments | ~800 |
 | `/brightdata` | Web scraping, proxies | ~850 |
 | `/playwright` | Browser automation (8 tools) | ~300 |
 
+## MCP Servers
+
+MCP server configs are managed centrally in `mcp-servers/manifest.json` (source of truth) and propagated via `mcp-servers/sync.py` (`python mcp-servers/sync.py --server <name>`; `--dry-run` to preview). See `mcp-servers/README.md`. The `mcp-server/`, `mcp-server-code-exec/` and `mcp-server-playwright/` directories hold the toolkit's own MCP implementations (Supabase direct tools, code execution, curated Playwright) — see each directory's README.
+
 ## References
-- **MCP server summary**: `MCP_SERVER_SUMMARY.md` ⭐ NEW - What was built and why
-- **MCP server guide**: `mcp-server/README.md` ⭐ NEW - Complete usage guide
-- **MCP installation**: `mcp-server/INSTALLATION.md` ⭐ NEW - Step-by-step setup
-- **MCP design**: `mcp-server/design.md` ⭐ NEW - Architecture & token optimization
+- **MCP server guide**: `mcp-server/README.md` - Complete usage guide
+- **MCP installation**: `mcp-server/INSTALLATION.md` - Step-by-step setup
+- **MCP design**: `mcp-server/design.md` - Architecture & token optimization
 - **Playwright MCP**: `mcp-server-playwright/README.md` - Visual + interactive frontend tools
 - **Slash commands guide**: `SLASH_COMMANDS.md` - Documentation loading
 - **Command definitions**: `.claude/commands/*.md` - Service-specific commands

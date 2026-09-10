@@ -23,7 +23,7 @@ from typing import Optional, Any
 sys.path.insert(0, str(Path(__file__).parent))
 
 from core.config import Config
-from core.documentation import Documentation
+from core.documentation import DocumentationManager as Documentation
 
 class APIToolkit:
     """

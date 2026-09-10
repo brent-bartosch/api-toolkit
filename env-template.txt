@@ -82,3 +82,6 @@ SHOPIFY_ACCESS_TOKEN=shpat_...
 
 # Smartlead - Email Campaigns
 SMARTLEAD_API_KEY=
+
+# Linear
+LINEAR_API_KEY=

@@ -1,9 +1,24 @@
 {
   "mcpServers": {
     "playwright": {
-      "command": "python",
-      "args": ["/Users/brentbartosch/Development/api-toolkit/mcp-server-playwright/server.py"],
-      "env": {}
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest",
+        "--user-data-dir",
+        "/Users/brentbartosch/.hermes/browser-profiles/playwright",
+        "--headless"
+      ],
+      "env": {},
+      "timeout": 120
+    },
+    "legal-mcp": {
+      "command": "legal-mcp",
+      "args": [],
+      "env": {
+        "LEGAL_MCP_DEMO": "true"
+      },
+      "notes": "Requires: pip install legal-mcp in a venv. Demo mode uses public CourtListener data. Set LEGAL_MCP_DEMO=false + add CLIOP_API_KEY/PACER_API_KEY for full features."
     }
   }
 }

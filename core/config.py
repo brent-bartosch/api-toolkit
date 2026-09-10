@@ -74,6 +74,10 @@ class Config:
             "env_vars": ["SHOPIFY_SHOP_DOMAIN", "SHOPIFY_ACCESS_TOKEN"],
             "token_cost": 600,
         },
+        "linear": {
+            "env_vars": ["LINEAR_API_KEY"],
+            "token_cost": 800,
+        },
         "monitoring": {
             "env_vars": [
                 "DISCORD_WEBHOOK_URL",

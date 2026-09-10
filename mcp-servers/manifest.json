@@ -1,0 +1,119 @@
+{
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/specification/main/schema/mcp-server-manifest.json",
+  "description": "Canonical MCP server definitions for all agent tools (Hermes, Claude Code, Codex). Source of truth — sync.py propagates to each tool's native config format.",
+  "version": "1.1.0",
+  "updated": "2026-08-10",
+  "servers": {
+    "playwright": {
+      "description": "Official Microsoft Playwright MCP — browser automation with persistent login sessions.",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest",
+        "--user-data-dir",
+        "~/.hermes/browser-profiles/playwright",
+        "--headless"
+      ],
+      "env": {},
+      "timeout": 120,
+      "persistent_profile": true,
+      "profile_dir": "~/.hermes/browser-profiles/playwright",
+      "tools_include": [
+        "browser_navigate",
+        "browser_navigate_back",
+        "browser_click",
+        "browser_type",
+        "browser_snapshot",
+        "browser_tabs",
+        "browser_file_upload",
+        "browser_fill_form",
+        "browser_evaluate",
+        "browser_network_requests",
+        "browser_take_screenshot",
+        "browser_wait_for"
+      ],
+      "tools_dropped": [
+        "browser_close — session closes on restart",
+        "browser_resize — use browser_evaluate",
+        "browser_console_messages — use browser_evaluate",
+        "browser_handle_dialog — niche, alerts auto-dismiss",
+        "browser_press_key — use browser_evaluate",
+        "browser_hover — use browser_evaluate",
+        "browser_select_option — use browser_evaluate",
+        "browser_drag — niche",
+        "browser_drop — niche",
+        "browser_network_request — detail view, rarely needed",
+        "browser_run_code_unsafe — browser_evaluate covers it"
+      ],
+      "notes": [
+        "12 of 23 tools exposed in Hermes (~2,532 tokens vs 4,577 all-tools).",
+        "Claude Code: project-level only (.claude/mcp.json in api-toolkit) — not global. All 23 tools (no per-tool filter in Claude Code's MCP format).",
+        "Codex: NOT configured — uses its own browser@openai-bundled + chrome@openai-bundled plugins. No Playwright MCP needed.",
+        "browser_evaluate covers: scroll, hover, press_key, resize, select_option, console_messages — all doable via JS.",
+        "Persistent profile preserves login sessions across restarts — shared across Hermes and Claude Code."
+      ]
+    },
+    "smartlead": {
+      "description": "Smartlead cold email API — campaign management, webhooks, analytics.",
+      "command": "~/.codex/bin/mcp-smartlead",
+      "args": [],
+      "env": {},
+      "scope": "codex-only",
+      "notes": ["Binary MCP server — already configured in Codex. Not synced to other tools."]
+    },
+    "supabase": {
+      "description": "Supabase database tools — query, discover, raw SQL, CRUD, RPC, edge functions.",
+      "command": "~/.codex/bin/mcp-supabase",
+      "args": [],
+      "env": {},
+      "scope": "codex-only",
+      "notes": ["Binary MCP server — already configured in Codex. Not synced to other tools."]
+    },
+    "legal-mcp": {
+      "description": "US legal research MCP server — 4M+ court opinions (CourtListener), Clio practice management, PACER federal filings. Free alternative to Westlaw/Lexis for case law research and citation grounding.",
+      "command": "legal-mcp",
+      "args": [],
+      "env": {
+        "LEGAL_MCP_DEMO": "true"
+      },
+      "scope": "opt-in",
+      "install": "pip install legal-mcp (in venv) — see https://github.com/Mahender22/legal-mcp",
+      "notes": [
+        "Demo mode works without API keys (CourtListener public data). Set LEGAL_MCP_DEMO=false and add CLIOP_API_KEY / PACER_API_KEY for full features.",
+        "Pairs with ~/.claude/skills/legal/ — use legal-mcp to ground contract review clauses in real case law and citations.",
+        "Hermes: sync if legal research is needed in Hermes sessions. Token cost ~1,500-2,000 depending on active tools.",
+        "Claude Code: project-level only — add to api-toolkit/.claude/mcp.json when working on legal projects.",
+        "Codex: not configured — add manually if legal research is needed in Codex sessions."
+      ]
+    }
+  },
+  "tool_configs": {
+    "hermes": {
+      "config_path": "~/.hermes/config.yaml",
+      "config_key": "mcp_servers",
+      "format": "yaml",
+      "tool_prefix": "mcp_",
+      "tool_naming": "{prefix}{server}_{tool}",
+      "tool_filtering": "mcp_servers.<name>.tools.include — YAML list of tool names to expose. Others are discovered but not registered.",
+      "browser_toolset": "DISABLED — built-in browser toolset disabled in favor of Playwright MCP. Saves ~2,000 tokens of duplicate tool definitions.",
+      "notes": "12 Playwright tools (~2,532 tokens). Built-in browser toolset disabled."
+    },
+    "claude_code": {
+      "config_path": "project-level .claude/mcp.json",
+      "config_key": "mcpServers",
+      "format": "json",
+      "tool_naming": "{tool}",
+      "tool_filtering": "Not supported — all 23 tools load when server is configured. Mitigated by project-level config (only loads when working in api-toolkit).",
+      "global_config_removed": true,
+      "notes": "Project-level only in ~/Development/api-toolkit/.claude/mcp.json. All 23 tools (~4,577 tokens) but only when working in this project."
+    },
+    "codex": {
+      "config_path": "~/.codex/config.toml",
+      "config_key": "mcp_servers",
+      "format": "toml",
+      "tool_naming": "{tool}",
+      "playwright_configured": false,
+      "notes": "Not configured. Codex uses its own browser@openai-bundled + chrome@openai-bundled plugins. No token overhead from Playwright MCP."
+    }
+  }
+}
